@@ -1,0 +1,59 @@
+{
+	"title": "任务日志",
+	"display": [
+		"taskName"
+	],
+	"namespace": [
+		"ns_system"
+	],
+	"prop": {
+		"taskId": {
+			"title": "任务编码",
+			"base": "String",
+			"required": true
+		},
+		"taskName": {
+			"title": "任务名称",
+			"base": "String",
+			"required": true
+		},
+		"startTime": {
+			"title": "开始时间",
+			"base": "Datetime",
+			"required": false
+		},
+		"endTime": {
+			"title": "结束时间",
+			"base": "Datetime",
+			"required": false
+		},
+		"runTime": {
+			"title": "任务运行时长（毫秒）",
+			"base": "String",
+			"required": false,
+			"upperLimit": 1000,
+			"lowerLimit": 1,
+			"readOnly": true
+		},
+		"state": {
+			"title": "任务状态",
+			"base": "String",
+			"required": false,
+			"valueSource": [
+				{
+					"key": "success",
+					"value": "成功"
+				},
+				{
+					"key": "failure",
+					"value": "失败"
+				},
+				{
+					"key": "running",
+					"value": "运行中"
+				}
+			],
+			"readOnly": true
+		}
+	}
+}

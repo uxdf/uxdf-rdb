@@ -1,0 +1,30 @@
+{
+  "title": "Node定义",
+  "display": [
+    "title"
+  ],
+  "namespace": [
+    "ns_system"
+  ],
+  "uniqueIndex": [
+    "sd"
+  ],
+  "prop": {
+    "sd": {
+      "title": "定义名称",
+      "base": "String",
+      "required": true
+    },
+    "title": {
+      "title": "标题",
+      "base": "String",
+      "required": true
+    },
+    "definition": {
+      "title": "定义",
+      "base": "String",
+      "upperLimit": -1,
+      "required": true
+    }
+  }
+}

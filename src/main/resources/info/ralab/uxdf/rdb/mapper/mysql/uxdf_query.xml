@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="info.ralab.uxdf.rdb.mapper.UXDFQueryMapper">
+    <select id="count" resultType="java.lang.Long">
+        select count(1) as count
+        from (<include refid="queryTableCount"/>) as t
+    </select>
+    <select id="query" resultType="com.alibaba.fastjson.JSONObject">
+        select
+        <foreach collection="queryInfoList" item="queryInfo" separator=",">
+            ${queryInfo.alias}.*
+        </foreach>
+        from
+        <foreach collection="queryInfoList" index="queryIndex" item="queryInfo">
+            <if test="queryInfo.join != null">
+                ${queryInfo.join.joinType} JOIN
+            </if>
+            (
+            <choose>
+                <when test="queryPage != null and queryIndex == 0">
+                    <include refid="queryPageTable"/>
+                </when>
+                <otherwise>
+                    <include refid="queryTable"/>
+                </otherwise>
+            </choose>
+            ) ${queryInfo.alias}
+            <if test="queryInfo.join != null">
+                ON
+                <foreach collection="queryInfo.join.joinColumns" index="selfColumn" item="joinColumn" separator="and">
+                    ${queryInfo.alias}.${selfColumn} = ${queryInfo.join.joinAlias}.${joinColumn}
+                </foreach>
+            </if>
+        </foreach>
+        <if test="queryOrderList != null and !queryOrderList.isEmpty()">
+            ORDER BY
+            <foreach collection="queryOrderList" item="queryOrder" separator=",">
+                ${queryOrder.property} ${queryOrder.type}
+            </foreach>
+        </if>
+    </select>
+
+    <sql id="queryExists">
+        select 1 from ${existsInfo.selfTable}
+        where
+        <foreach collection="existsInfo.existsColumns" index="selfColumn" item="existsColumn" separator="and">
+            ${selfColumn} = ${existsInfo.existsTable}.${existsColumn}
+        </foreach>
+        <if test="!existsInfo.params.isEmpty()">
+            and
+            <foreach collection="existsInfo.params" item="param" separator="and">
+                <choose>
+                    <when test="param.value instanceof java.util.List">
+                        ${param.column} in
+                        <foreach collection="param.value" item="value" open="(" close=")" separator=",">
+                            #{value}
+                        </foreach>
+                    </when>
+                    <when test="param.logic.equals(@info.ralab.uxdf.model.SdDataQueryLogic@NULL)">
+                        ${param.column} ${param.expression}
+                    </when>
+                    <when test="param.logic.equals(@info.ralab.uxdf.model.SdDataQueryLogic@NN)">
+                        ${param.column} ${param.expression}
+                    </when>
+                    <otherwise>
+                        ${param.column} ${param.expression} #{param.value}
+                    </otherwise>
+                </choose>
+            </foreach>
+        </if>
+    </sql>
+
+    <sql id="queryDataAuth">
+        <if test="auth != null and auth.isFilterByRoles">
+            and a_id in (
+            select e.a_right
+            from ${auth.dataRoleTable} e inner join ${auth.roleTable} r on e.a_left = r.a_id
+            where r.p_name in
+            <foreach collection="auth.roles" item="role" open="(" separator="," close=")">
+                #{role}
+            </foreach>
+            )
+        </if>
+    </sql>
+
+    <sql id="queryTable">
+        select
+        <foreach collection="queryInfo.columns" item="columnName" index="aliasName" separator=",">
+            ${columnName} ${aliasName}
+        </foreach>
+        from ${queryInfo.table},(SELECT @rownum := 0) r
+        where 1 = 1
+        <if test="queryInfo.table == 'TN_MENU_ITEM'.toString() ">
+            <include refid="queryDataAuth" />
+        </if>
+        <include refid="jointParams" />
+    </sql>
+
+    <sql id="queryTableCount">
+        select
+        <foreach collection="queryInfo.columns" item="columnName" index="aliasName" separator=",">
+            ${columnName} ${aliasName}
+        </foreach>
+        from ${queryInfo.table}
+        where 1 = 1
+        <include refid="jointParams" />
+    </sql>
+
+    <sql id="jointParams">
+        <if test="!queryInfo.params.isEmpty()">
+            and
+            <foreach collection="queryInfo.params" item="param" separator="and">
+                <choose>
+                    <when test="param.value instanceof java.util.List">
+                        ${param.column} in
+                        <foreach collection="param.value" item="value" open="(" close=")" separator=",">
+                            #{value}
+                        </foreach>
+                    </when>
+                    <when test="param.logic.equals(@info.ralab.uxdf.model.SdDataQueryLogic@NULL)">
+                        ${param.column} ${param.expression}
+                    </when>
+                    <when test="param.logic.equals(@info.ralab.uxdf.model.SdDataQueryLogic@NN)">
+                        ${param.column} ${param.expression}
+                    </when>
+                    <otherwise>
+                        ${param.column} ${param.expression} #{param.value}
+                    </otherwise>
+                </choose>
+            </foreach>
+        </if>
+        <if test="queryInfo.exists != null and queryInfo.useExists">
+            <foreach collection="queryInfo.exists.existsList" item="existsInfo">
+                <choose>
+                    <when test="existsInfo.isClose()">)</when>
+                    <otherwise>
+                        and exists (
+                        <include refid="queryExists">
+                            <property name="existsInfo" value="${existsInfo}" />
+                        </include>
+                    </otherwise>
+                </choose>
+            </foreach>
+        </if>
+        <if test="!queryInfo.orders.isEmpty()">
+            ORDER BY
+            <foreach collection="queryInfo.orders" item="queryOrder" separator=",">
+                ${queryOrder.property} ${queryOrder.type}
+            </foreach>
+        </if>
+    </sql>
+
+    <sql id="queryPageTable">
+        select * from (
+        select I.*, @rownum := @rownum +1 as T_ROW_NUM
+        from (<include refid="queryTable"/>) I
+        where @rownum +1 &lt;= #{queryPage.start} + #{queryPage.limit}
+        ) O
+        where O.T_ROW_NUM &gt; #{queryPage.start}
+    </sql>
+</mapper>

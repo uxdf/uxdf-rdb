@@ -1,0 +1,111 @@
+{
+	"Line": {
+		"Tower": {
+			"title": "属于",
+			"isLeftMaster": false,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"repositories": [
+				"metadata_origin",
+				"metadata_dict",
+				"data_standard",
+				"data_standard_publish",
+				"data_xuqiu",
+				"help",
+				"metadata_module"
+			],
+			"prop": {},
+			"required": "left"
+		}
+	},
+	"DimensionSignifier": {
+		"Dimension": {
+			"title": "属于",
+			"isLeftMaster": true,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"prop": {}
+		}
+	},
+	"Role": {
+		"MenuItem": {
+			"title": "属于",
+			"isLeftMaster": true,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"prop": {}
+		}
+	},
+	"MenuBranch": {
+		"MenuBranch": {
+			"title": "属于",
+			"isLeftMaster": true,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"prop": {}
+		}
+	},
+	"MenuItem": {
+		"MenuBranch": {
+			"title": "属于",
+			"isLeftMaster": false,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"prop": {}
+		}
+	},
+	"User": {
+		"Department": {
+			"title": "用户属于部门",
+			"isLeftMaster": false,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"prop": {}
+		}
+	},
+	"Difference": {
+		"CompareObject": {
+			"title": "属于",
+			"isLeftMaster": false,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"prop": {}
+		}
+	},
+	"DifferenceSub": {
+		"CompareSubObject": {
+			"title": "属于",
+			"isLeftMaster": false,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"prop": {}
+		}
+	},
+	"CompareSubObject": {
+		"CompareObject": {
+			"title": "属于",
+			"isLeftMaster": false,
+			"isRightMaster": true,
+			"display": [
+				"__id"
+			],
+			"prop": {}
+		}
+	}
+}

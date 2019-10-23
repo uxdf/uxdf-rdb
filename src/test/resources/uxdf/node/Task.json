@@ -1,0 +1,60 @@
+{
+	"title": "任务",
+	"display": [
+		"name"
+	],
+	"namespace": [
+		"ns_system",
+		"ns_user"
+	],
+	"uniqueIndex": [
+		"name"
+	],
+	"prop": {
+		"name": {
+			"title": "名称",
+			"base": "String",
+			"required": true,
+			"upperLimit": 30,
+			"lowerLimit": 1,
+			"validRule": [
+				[
+					{
+						"prop": "value",
+						"type": "regex",
+						"value": "^[a-zA-Z_0-9\\u4e00-\\u9fa5]*$",
+						"message": "仅能输入中文字符、英文字母、数字和下划线"
+					}
+				]
+			]
+		},
+		"state": {
+			"title": "状态",
+			"base": "String",
+			"required": false,
+			"valueSource": [
+				{
+					"key": "success",
+					"value": "成功"
+				},
+				{
+					"key": "failure",
+					"value": "失败"
+				},
+				{
+					"key": "termination",
+					"value": "停止"
+				},
+				{
+					"key": "running",
+					"value": "运行中"
+				},
+				{
+					"key": "waiting",
+					"value": "已下发"
+				}
+			],
+			"readOnly": true
+		}
+	}
+}

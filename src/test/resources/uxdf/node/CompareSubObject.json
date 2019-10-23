@@ -1,0 +1,54 @@
+{
+	"title": "字段对比主体",
+	"display": [
+		"__id"
+	],
+	"namespace": [
+		"ns_system",
+		"ns_user"
+	],
+	"prop": {
+		"compType": {
+			"title": "差异类型",
+			"base": "String",
+			"required": true,
+			"upperLimit": 100,
+			"lowerLimit": 1,
+			"valueSource": [
+				{
+					"key": "delete",
+					"value": "删除"
+				},
+				{
+					"key": "create",
+					"value": "新增"
+				},
+				{
+					"key": "update",
+					"value": "变更"
+				}
+			]
+		},
+		"compMain": {
+			"title": "对比主体",
+			"base": "String",
+			"required": true,
+			"upperLimit": 500,
+			"lowerLimit": 1
+		},
+		"version": {
+			"title": "版本号",
+			"base": "String",
+			"required": true,
+			"upperLimit": 100,
+			"lowerLimit": 1
+		},
+		"nodeUuid": {
+			"title": "节点唯一标识",
+			"base": "String",
+			"required": true,
+			"upperLimit": 500,
+			"lowerLimit": 1
+		}
+	}
+}

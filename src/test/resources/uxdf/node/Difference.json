@@ -1,0 +1,33 @@
+{
+	"title": "差异详情",
+	"display": [
+		"__id"
+	],
+	"namespace": [
+		"ns_system",
+		"ns_user"
+	],
+	"prop": {
+		"diffProp": {
+			"title": "差异属性名称",
+			"base": "String",
+			"required": true,
+			"upperLimit": 100,
+			"lowerLimit": 1
+		},
+		"olderValue": {
+			"title": "旧值",
+			"base": "String",
+			"required": false,
+			"upperLimit": 10000,
+			"lowerLimit": 1
+		},
+		"newerValue": {
+			"title": "新值",
+			"base": "String",
+			"required": false,
+			"upperLimit": 10000,
+			"lowerLimit": 1
+		}
+	}
+}

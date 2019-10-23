@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="info.ralab.uxdf.rdb.mapper" level="DEBUG"/>
+    <!--<logger name="info.ralab.truedata.service.TaskService" level="DEBUG"/>-->
+    <!--<logger name="info.ralab.truedata.gragit.GragitService" level="DEBUG"/>-->
+    <!--<logger name="info.ralab.truedata.controller.FeatureController" level="DEBUG"/>-->
+
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

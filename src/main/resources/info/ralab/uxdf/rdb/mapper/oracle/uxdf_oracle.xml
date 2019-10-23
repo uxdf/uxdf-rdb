@@ -1,0 +1,564 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="info.ralab.uxdf.rdb.mapper.UXDFMapper">
+    <select id="get" resultType="com.alibaba.fastjson.JSONObject">
+        select * from ${table}
+        where
+        <choose>
+            <when test="id instanceof java.util.Collection">
+                <foreach collection="id" item="nodeId" open="(" close=")" separator="or">
+                    a_id = #{nodeId}
+                </foreach>
+            </when>
+            <otherwise>
+                a_id = #{id}
+            </otherwise>
+        </choose>
+        <include refid="queryDataAuth"/>
+    </select>
+
+    <select id="query" resultType="com.alibaba.fastjson.JSONObject">
+        select * from ${table}
+        where 1 = 1
+        <include refid="queryWhere"/>
+        <include refid="queryDataAuth"/>
+        <include refid="queryOrder"/>
+        <if test="updateLock">
+            for update
+        </if>
+    </select>
+
+    <select id="queryCount" resultType="java.lang.Long">
+        select count(*) from ${table}
+        where 1 = 1
+        <include refid="queryWhere"/>
+        <include refid="queryDataAuth"/>
+    </select>
+
+    <select id="queryPage" resultType="com.alibaba.fastjson.JSONObject">
+        select * from (
+        select I.*, rownum as T_ROW_NUM
+        from (
+        select ${table}.*
+        from ${table}
+        where 1 = 1
+        <include refid="queryWhere"/>
+        <include refid="queryDataAuth"/>
+        <include refid="queryOrder"/>
+        ) I
+        where rownum &lt;= #{page.skip} + #{page.limit}
+        ) O
+        where O.T_ROW_NUM &gt; #{page.skip}
+    </select>
+
+    <select id="queryRightByLeft" resultType="com.alibaba.fastjson.JSONObject">
+        select
+        <choose>
+            <when test="nodeAlias != null and eventAlias != null">
+                <foreach collection="nodeAlias" item="columnName" index="aliasName" separator="," close=",">
+                    NODE.${columnName} ${aliasName}
+                </foreach>
+                <foreach collection="eventAlias" item="columnName" index="aliasName" separator=",">
+                    EVENT.${columnName} ${aliasName}
+                </foreach>
+            </when>
+            <otherwise>
+                NODE.*
+            </otherwise>
+        </choose>
+        from ${rightNodeTable} NODE left join ${eventTable} EVENT on NODE.A_ID = EVENT.A_RIGHT
+        where
+        <choose>
+            <when test="leftNodeId instanceof java.util.List">
+                EVENT.A_LEFT in
+                <foreach collection="leftNodeId" item="nodeId" open="(" close=")" separator=",">
+                    #{nodeId}
+                </foreach>
+            </when>
+            <when test="leftNodeId instanceof java.lang.String">
+                EXISTS (SELECT * FROM ${leftNodeId} T_IDS WHERE T_IDS.ID = EVENT.A_LEFT)
+            </when>
+            <when test="leftNodeId instanceof java.lang.Long">
+                EVENT.A_LEFT = #{leftNodeId}
+            </when>
+            <otherwise>
+                1 = 2
+            </otherwise>
+        </choose>
+        <include refid="queryWhereAlias">
+            <property name="alias" value="NODE"/>
+        </include>
+    </select>
+
+    <select id="queryLeftByRight" resultType="com.alibaba.fastjson.JSONObject">
+        select
+        <choose>
+            <when test="nodeAlias != null and eventAlias != null">
+                <foreach collection="nodeAlias" item="columnName" index="aliasName" separator="," close=",">
+                    NODE.${columnName} ${aliasName}
+                </foreach>
+                <foreach collection="eventAlias" item="columnName" index="aliasName" separator=",">
+                    EVENT.${columnName} ${aliasName}
+                </foreach>
+            </when>
+            <otherwise>
+                NODE.*
+            </otherwise>
+        </choose>
+        from ${leftNodeTable} NODE left join ${eventTable} EVENT on NODE.A_ID = EVENT.A_LEFT
+        where
+        <choose>
+            <when test="rightNodeId instanceof java.util.List">
+                EVENT.A_RIGHT in
+                <foreach collection="rightNodeId" item="nodeId" open="(" close=")" separator=",">
+                    #{nodeId}
+                </foreach>
+            </when>
+            <when test="rightNodeId instanceof java.lang.String">
+                EXISTS (SELECT * FROM ${rightNodeId} T_IDS WHERE T_IDS.ID = EVENT.A_RIGHT)
+            </when>
+            <when test="rightNodeId instanceof java.lang.Long">
+                EVENT.A_RIGHT = #{rightNodeId}
+            </when>
+            <otherwise>
+                1 = 2
+            </otherwise>
+        </choose>
+        <include refid="queryWhereAlias">
+            <property name="alias" value="NODE"/>
+        </include>
+    </select>
+
+    <insert id="insert" parameterType="info.ralab.uxdf.rdb.model.InsertParam">
+        insert into ${table}
+        (A_ID,
+        <foreach item="column" index="index" collection="columns" separator=", ">${column}</foreach>
+        )
+        values
+        (#{id},
+        <foreach item="value" index="index" collection="values" separator=", ">#{value}</foreach>
+        )
+    </insert>
+
+    <insert id="insertEvent" parameterType="info.ralab.uxdf.rdb.model.InsertParam">
+        <selectKey keyProperty="id" keyColumn="A_ID" resultType="java.lang.Long" order="BEFORE">
+            select nvl(
+            (
+            select a_id from ${table}
+            where a_sd = #{sd}
+            and a_repository = #{repository}
+            and a_branch = #{branch}
+            and a_version = #{version}
+            and a_left = #{left}
+            and a_left_sd = #{leftSd}
+            and a_left_repository = #{leftRepository}
+            and a_left_branch = #{leftBranch}
+            and a_left_version = #{leftVersion}
+            and a_right = #{right}
+            and a_right_sd = #{rightSd}
+            and a_right_repository = #{rightRepository}
+            and a_right_branch = #{rightBranch}
+            and a_right_version = #{rightVersion}
+            and rownum = 1
+            ),
+            #{id}
+            ) as a_id from dual
+        </selectKey>
+        MERGE INTO ${table} TI
+        USING (
+        select ${id} as a_id,
+            '${repository}' as a_repository,
+            '${branch}' as a_branch,
+            '${version}' as a_version,
+            '${left}' as a_left,
+            '${leftSd}' as a_left_sd,
+            '${leftRepository}' as a_left_repository,
+            '${leftBranch}' as a_left_branch,
+            '${leftVersion}' as a_left_version,
+            '${right}' as a_right,
+            '${rightSd}' as a_right_sd,
+            '${rightRepository}' as a_right_repository,
+            '${rightBranch}' as a_right_branch,
+            '${rightVersion}' as a_right_version
+        from dual
+        ) TS
+        ON (
+            TI.a_id = TS.a_id
+            and TI.a_repository = TS.a_repository
+            and TI.a_branch = TS.a_branch
+            and TI.a_left = TS.a_left
+            and TI.a_left_sd = TS.a_left_sd
+            and TI.a_left_repository = TS.a_left_repository
+            and TI.a_left_branch = TS.a_left_branch
+            and TI.a_left_version = TS.a_left_version
+            and TI.a_right = TS.a_right
+            and TI.a_right_sd = TS.a_right_sd
+            and TI.a_right_repository = TS.a_right_repository
+            and TI.a_right_branch = TS.a_right_branch
+            and TI.a_right_version = TS.a_right_version
+        )
+        WHEN MATCHED THEN
+        UPDATE SET a_sd = #{sd}
+        WHEN NOT MATCHED THEN
+        insert
+        (A_ID,
+        <foreach item="column" index="index" collection="columns" separator=", ">${column}</foreach>
+        )
+        values
+        (#{id},
+        <foreach item="value" index="index" collection="values" separator=", ">#{value}</foreach>
+        )
+    </insert>
+
+    <update id="update" parameterType="info.ralab.uxdf.rdb.model.UpdateParam">
+        update ${table} set
+        <foreach item="columnValue" index="index" collection="columnValues" separator=", ">
+            ${columnValue.column} = #{columnValue.value}
+        </foreach>
+        where A_ID = #{id}
+        <if test="syncLock != null">
+            <if test="syncLock.value == null">
+                and ${syncLock.column} is NULL
+            </if>
+            <if test="syncLock.value != null">
+                and ${syncLock.column} = #{syncLock.value}
+            </if>
+        </if>
+    </update>
+
+    <delete id="deleteEventByLeftNode">
+        delete from ${table}
+        where A_LEFT = #{left}
+    </delete>
+
+    <delete id="deleteEventByRightNode">
+        delete from ${table}
+        where A_RIGHT = #{right}
+    </delete>
+
+    <delete id="deleteNode">
+        delete from ${table} where 1 = 1
+        <if test="id != null">
+            and A_ID = #{id}
+        </if>
+        <include refid="queryDataAuth" />
+    </delete>
+
+    <delete id="deleteEvent">
+        delete from ${table} where  1 = 1
+        <if test="id != null">
+            and A_ID = #{id}
+        </if>
+        <include refid="queryDataAuth" />
+    </delete>
+
+    <update id="dropTable">
+        drop table "${table}" cascade constraints PURGE
+    </update>
+
+    <select id="getTowerByCode" resultType="com.alibaba.fastjson.JSONObject">
+        select
+        <foreach collection="towerAlias" item="columnName" index="aliasName" separator="," close=",">
+            TOWER.${columnName} ${aliasName}
+        </foreach>
+        <foreach collection="lineAlias" item="columnName" index="aliasName" separator="," close=",">
+            LINE.${columnName} ${aliasName}
+        </foreach>
+        <foreach collection="belongToAlias" item="columnName" index="aliasName" separator=",">
+            BELONG_TO.${columnName} ${aliasName}
+        </foreach>
+        from
+        (
+        select * from ${towerTable}
+        where
+        P_CODE = #{code}
+        and A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) TOWER
+        left join (
+        select * from ${belongToTable}
+        where
+        A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) BELONG_TO on TOWER.A_ID = BELONG_TO.A_RIGHT
+        left join (
+        select * from ${lineTable}
+        where
+        A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) LINE on LINE.A_ID = BELONG_TO.A_LEFT
+        order by
+        <foreach item="order" index="index" collection="orders" separator=" , ">
+            LINE.${order.column} ${order.type}
+        </foreach>
+    </select>
+
+    <select id="getTowerByCodePage" resultType="com.alibaba.fastjson.JSONObject">
+        select * from (
+        select I.*, rownum as T_ROW_NUM
+        from (
+        select
+        <foreach collection="towerAlias" item="columnName" index="aliasName" separator="," close=",">
+            TOWER.${columnName} ${aliasName}
+        </foreach>
+        <foreach collection="lineAlias" item="columnName" index="aliasName" separator="," close=",">
+            LINE.${columnName} ${aliasName}
+        </foreach>
+        <foreach collection="belongToAlias" item="columnName" index="aliasName" separator=",">
+            BELONG_TO.${columnName} ${aliasName}
+        </foreach>
+        from
+        (
+        select * from ${towerTable}
+        where
+        P_CODE = #{code}
+        and A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) TOWER
+        left join (
+        select * from ${belongToTable}
+        where
+        A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) BELONG_TO on TOWER.A_ID = BELONG_TO.A_RIGHT
+        left join (
+        select * from ${lineTable}
+        where
+        A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) LINE on LINE.A_ID = BELONG_TO.A_LEFT
+        order by
+        <foreach item="order" index="index" collection="orders" separator=" , ">
+            LINE.${order.column} ${order.type}
+        </foreach>
+        ) I
+        where rownum &lt;= #{page.skip} + #{page.limit}
+        ) O
+        where O.T_ROW_NUM &gt; #{page.skip}
+    </select>
+
+    <select id="getTowerByCodeCount" resultType="java.lang.Long">
+        select count(*)
+        from
+        (
+        select * from ${towerTable}
+        where
+        P_CODE = #{code}
+        and A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) TOWER
+        left join (
+        select * from ${belongToTable}
+        where
+        A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) BELONG_TO on TOWER.A_ID = BELONG_TO.A_RIGHT
+        left join (
+        select * from ${lineTable}
+        where
+        A_REPOSITORY = #{repository}
+        and A_BRANCH = #{branch}
+        ) LINE on LINE.A_ID = BELONG_TO.A_LEFT
+        order by
+        <foreach item="order" index="index" collection="orders" separator=" , ">
+            LINE.${order.column} ${order.type}
+        </foreach>
+    </select>
+
+    <sql id="queryWhere">
+        <if test="params != null and !params.isEmpty()">
+            and
+            <foreach item="param" index="index" collection="params" separator=" and ">
+                <choose>
+                    <when test='table.equals("TN_CHECK_TASK_DETAIL") and param.column.equals("P_BATCH_SEQUENCE")'>
+                        exists(
+                        select /*+ use_merge(tn_check_task_batch,tn_check_task_detail) */ 1 from TN_CHECK_TASK_BATCH
+                        where P_BATCH_SEQUENCE = TN_CHECK_TASK_DETAIL.P_BATCH_SEQUENCE
+                        )
+                    </when>
+                    <when test='table.equals("TN_CHECK_TASK_DETAIL") and param.column.equals("A_REPOSITORY")'>
+                        1 = 1
+                    </when>
+                    <when test='table.equals("TN_CHECK_TASK_DETAIL") and param.column.equals("A_BRANCH")'>
+                        1 = 1
+                    </when>
+                    <when test="param.value instanceof java.util.List">
+                        <foreach collection="param.value" item="value" open="(" close=")" separator="or">
+                            ${param.column} = #{value}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        <choose>
+                            <when test='param.column.startsWith("P_") and param.value instanceof info.ralab.uxdf.definition.CharFragment'>
+                                <choose>
+                                    <when test='param.value.position.equals("start")'>
+                                        ${param.column} like #{param.value} || '%'
+                                    </when>
+                                    <when test='param.value.position.equals("end")'>
+                                        ${param.column} like '%' || #{param.value}
+                                    </when>
+                                    <otherwise>
+                                        ${param.column} like '%' || #{param.value} || '%'
+                                    </otherwise>
+                                </choose>
+                            </when>
+                            <otherwise>
+                                ${param.column} ${param.logic} #{param.value}
+                            </otherwise>
+                        </choose>
+                    </otherwise>
+                </choose>
+            </foreach>
+        </if>
+    </sql>
+
+    <sql id="queryWhereAlias">
+        <if test="params != null and !params.isEmpty()">
+            and
+            <foreach item="param" index="index" collection="params" separator=" and ">
+                <choose>
+                    <when test='table.equals("TN_CHECK_TASK_DETAIL") and param.column.equals("P_BATCH_SEQUENCE")'>
+                        exists(
+                        select /*+ use_merge(tn_check_task_batch,tn_check_task_detail) */ 1 from TN_CHECK_TASK_BATCH
+                        where P_BATCH_SEQUENCE = TN_CHECK_TASK_DETAIL.P_BATCH_SEQUENCE
+                        )
+                    </when>
+                    <when test='table.equals("TN_CHECK_TASK_DETAIL") and param.column.equals("A_REPOSITORY")'>
+                        1 = 1
+                    </when>
+                    <when test='table.equals("TN_CHECK_TASK_DETAIL") and param.column.equals("A_BRANCH")'>
+                        1 = 1
+                    </when>
+                    <when test="param.value instanceof java.util.List">
+                        <foreach collection="param.value" item="value" open="(" close=")" separator="or">
+                            ${alias}.${param.column} = #{value}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        <choose>
+                            <when test='param.column.startsWith("P_") and param.value instanceof info.ralab.uxdf.definition.CharFragment'>
+                                <choose>
+                                    <when test='param.value.position.equals("start")'>
+                                        ${alias}.${param.column} like #{param.value} || '%'
+                                    </when>
+                                    <when test='param.value.position.equals("end")'>
+                                        ${alias}.${param.column} like '%' || #{param.value}
+                                    </when>
+                                    <otherwise>
+                                        ${alias}.${param.column} like '%' || #{param.value} || '%'
+                                    </otherwise>
+                                </choose>
+                            </when>
+                            <otherwise>
+                                ${alias}.${param.column} ${param.logic} #{param.value}
+                            </otherwise>
+                        </choose>
+                    </otherwise>
+                </choose>
+            </foreach>
+        </if>
+    </sql>
+
+    <sql id="queryOrder">
+        <if test="orders != null and !orders.isEmpty()">
+            order by
+            <foreach item="order" index="index" collection="orders" separator=" , ">
+                ${order.column} ${order.type}
+            </foreach>
+        </if>
+    </sql>
+
+    <sql id="queryDataAuth">
+        <if test="auth != null and auth.isFilterByRoles">
+            and a_id in (
+            select e.a_right
+            from ${auth.dataRoleTable} e inner join ${auth.roleTable} r on e.a_left = r.a_id
+            where r.p_name in
+            <foreach collection="auth.roles" item="role" open="(" separator="," close=")">
+                #{role}
+            </foreach>
+            )
+        </if>
+        <if test='auth != null and !auth.isAdmin and auth.userId != null and table.equals("TN_CHECK_TASK_DETAIL")'>
+            and exists (
+            select * from TN_PARENT_DEPARTMENT PD
+            where exists (
+            select * from TN_DEPARTMENT D left join TE_USER_BELONG_TO_DEPARTMENT UBD
+            on d.A_ID = UBD.A_RIGHT
+            where UBD.A_LEFT = #{auth.userId}
+            and (D.P_CODE = PD.P_ORG_NO1 or D.P_CODE = PD.P_ORG_NO2 or D.P_CODE = PD.P_ORG_NO3 or D.P_CODE = PD.P_ORG_NO4)
+            )
+            and P_BRC = PD.P_ORI_ORGNO
+            )
+        </if>
+    </sql>
+
+    <update id="createTempIdTable">
+        CREATE GLOBAL TEMPORARY TABLE ${tableName}
+        (
+        ID NUMBER
+        )
+        ON COMMIT DELETE ROWS
+    </update>
+
+    <insert id="insertTempId">
+        insert into ${tableName} (id)
+        (
+        <foreach item="id" index="index" collection="ids" separator="union">
+            (select #{id} from dual)
+        </foreach>
+        )
+    </insert>
+
+    <insert id="insertBinary" parameterType="info.ralab.uxdf.utils.UXDFBinaryFileInfo">
+        insert into TN_BINARY_FILE
+        (A_ID,A_REPOSITORY,A_BRANCH,A_SD,A_CREATE_TIME,A_UPDATE_TIME,P_KEY,P_NAME,P_ORIGINAL_FILENAME,P_CONTENT_TYPE,P_LENGTH,P_CONTENT)
+        values
+        (SEQ_NODE.NEXTVAL,'none','master','BinaryFile',current_timestamp,current_timestamp,#{key},#{name},#{originalFilename},#{contentType},#{length},#{inputStream})
+    </insert>
+
+    <select id="getBinary" resultType="java.io.InputStream">
+        select ${column}
+        from ${table}
+        where A_UUID = #{uuid}
+    </select>
+
+    <select id="checkTableExists" resultType="java.lang.String">
+        select table_name from user_tables where table_name = #{table}
+    </select>
+
+    <update id="setEnv">
+        alter session set nls_sort = SCHINESE_PINYIN_M
+    </update>
+
+    <select id="getIdArea" resultType="java.lang.String">
+        select AREA from ID_AREA for update
+    </select>
+
+    <insert id="addIdArea">
+        insert into ID_AREA (AREA) values(#{area})
+    </insert>
+
+    <update id="setIdArea">
+        update ID_AREA set AREA = #{area}
+    </update>
+
+    <update id="createIdArea">
+        CREATE TABLE ID_AREA
+        (
+            AREA NVARCHAR2(37) NOT NULL,
+            constraint I_P_ID_AREA primary key(AREA)
+        )
+    </update>
+
+    <delete id="deleteEventByLeftAndRight">
+        delete from ${table} where A_LEFT = #{left} and A_RIGHT = #{right}
+    </delete>
+
+    <delete id="deleteNodeAll">
+        delete from ${table}
+    </delete>
+
+</mapper>
