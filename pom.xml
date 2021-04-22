@@ -23,7 +23,7 @@
         <lombok.version>1.18.8</lombok.version>
         <fastjson.version>1.2.58</fastjson.version>
         <com.google.guava.version>28.0-jre</com.google.guava.version>
-        <org.mybatis.mybatis.version>3.5.2</org.mybatis.mybatis.version>
+        <org.mybatis.mybatis.version>3.5.6</org.mybatis.mybatis.version>
         <mysql.version>8.0.16</mysql.version>
         <ojdbc8.version>12.2.0</ojdbc8.version>
         <mybatis-spring-boot.version>2.1.0</mybatis-spring-boot.version>
