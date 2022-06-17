@@ -21,7 +21,7 @@
         <java.version>1.8</java.version>
         <ralab.uxdf.version>4.0.4-SNAPSHOT</ralab.uxdf.version>
         <lombok.version>1.18.8</lombok.version>
-        <fastjson.version>1.2.58</fastjson.version>
+        <fastjson.version>1.2.83</fastjson.version>
         <com.google.guava.version>28.0-jre</com.google.guava.version>
         <org.mybatis.mybatis.version>3.5.2</org.mybatis.mybatis.version>
         <mysql.version>8.0.16</mysql.version>
